@@ -101,6 +101,13 @@
                                 class="{{ 'completed' if process.status == 'Completed' else 'failed' if process.status == 'Failed' else 'empty' if process.status == 'Empty' else 'directory' }}">
                                     {{ process.process }}
                                 </a>
+                                {% if process.status == 'Directory' %}
+                                    <ul>
+                                        {% for file in process.error %}
+                                            <li><a href="{{ url_for('logs', filename=file.path) }}" target="_blank">{{ file.name }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
