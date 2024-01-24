@@ -21,7 +21,7 @@ source dashboard_venv/bin/activate #Should include python and flask
 python dashboard.py
 ```
 
-You should modify the corresponding paths in `dashboard.py``.
+You should modify the corresponding paths in `dashboard.py`.
 
 Then, connect an ssh session with port forwarding:
 
