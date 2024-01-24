@@ -3,7 +3,7 @@
 
 Dashboard, initially developed for the [Firefox Training Pipeline](https://github.com/GreenNLP/firefox-translations-training) and displays the logs of selected experiments.
 
-![Screenshot of the Dashboard](.screenshot.png)
+![Screenshot of the Dashboard](.github/.screenshot.png)
 
 This dashboard has been inspired by the [ParaCrawl Dashboard](https://github.com/hplt-project/paracrawl-dashboard).
 

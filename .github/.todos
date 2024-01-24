@@ -1,0 +1,3 @@
+1. Group steps by task: data download, data cleaning, data filtering, model training...
+2. Fix how to display data for directories
+3. Add gpu performance when available
