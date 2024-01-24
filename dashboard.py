@@ -16,28 +16,20 @@ def get_session_data():
     for tmux_session in tmux_sessions:
         processes = sorted(Path(tmux_session).iterdir(), key=os.path.getmtime)
         for process in processes:
-            # Probably there is a cleaner way of doing this, it takes too long now
-            # if os.path.isdir(process):
-            #     processes.remove(process)
-            #     subprocesses = sorted(Path(process).iterdir(), key=os.path.getmtime)
-            #     # for subprocess in subprocesses:
-            #     #     if os.path.isdir(process):
-            #     #         subsubprocesses = sorted(Path(process).iterdir(), key=os.path.getmtime)
-            #     #         processes.extend(subsubprocesses)
-            #     # else:
-            #     processes.extend(subprocesses)
-            # # if file is empty:
             if os.stat(process).st_size == 0:
                 print(process, ": removed from log because it is empty")
                 processes.remove(process)
             if process.stem.endswith('log'): #This will get rid of GPU performance
                 processes.remove(process)
-        sessions[tmux_session]=processes
+        sessions[tmux_session] = processes
     return sessions
 
 def check_process_status(process_path):
     if os.path.isdir(process_path):
-        return "Directory", None
+        sub_files = sorted(Path(process_path).iterdir(), key=os.path.getmtime)
+        # remove gpu
+        sub_files = [file for file in sub_files if not file.name.endswith(".gpu")]
+        return "Directory", sub_files
     else:
         try:
             with open(process_path, "r") as file:
