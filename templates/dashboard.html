@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Dashboard</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .scroll-container {
+            position: relative;
+            padding-bottom: 20px; /* Space for the horizontal scrollbar */
+        }
+
+        .flex-container {
+            display: flex;
+            white-space: nowrap; /* Prevents wrapping of flex items */
+            padding: 20px;
+            width: max-content; /* Ensures flex-container takes up required width */
+        }
+
+        .horizontal-scrollbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20px; /* Height of the scrollbar */
+            overflow-x: scroll;
+            overflow-y: hidden;
+            visibility: hidden; /* Hide the scrollbar until we use JavaScript */
+        }
+        .session-block {
+            background-color: #fff;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+        .session-block h2 {
+            color: #555;
+            padding: 10px 15px;
+            margin: 0;
+            background-color: #eaeaea;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .completed {
+            color: green;
+            text-decoration: none;
+        }
+        .failed {
+            color: red;
+            text-decoration: none;
+        }
+        .empty {
+            color: orange;
+            text-decoration: none;
+        }
+        .slider {
+            width: 80%;
+            margin: 20px auto;
+        }
+    </style>    
+</head>
+<body>
+    <h1>Dashboard for Multi-FTT experiments</h1>
+    <div class="scroll-container">
+        <div class="flex-container">
+            {% for session, processes in process_data.items() %}
+                <div class="session-block">
+                    <h2>{{ session }}</h2>
+                    <table>
+                        {% for process in processes %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('logs', filename=process.path) }}" 
+                                target="_blank" 
+                                class="{{ 'completed' if process.status == 'Completed' else 'failed' if process.status == 'Failed' else 'empty' if process.status == 'Empty' else 'directory' }}">
+                                    {{ process.process }}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="horizontal-scrollbar" aria-hidden="true"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var flexContainer = document.querySelector('.flex-container');
+            var scrollbar = document.querySelector('.horizontal-scrollbar');
+    
+            // Set the width of the scrollbar
+            scrollbar.style.width = flexContainer.scrollWidth + 'px';
+    
+            // Show the scrollbar
+            scrollbar.style.visibility = 'visible';
+    
+            // Sync the scroll position of flexContainer with the scrollbar
+            scrollbar.addEventListener('scroll', function() {
+                flexContainer.scrollLeft = scrollbar.scrollLeft;
+            });
+    
+            // Sync the scroll position of the scrollbar with flexContainer
+            flexContainer.addEventListener('scroll', function() {
+                scrollbar.scrollLeft = flexContainer.scrollLeft;
+            });
+        });
+    </script>    
+</body>
+</html>
