@@ -1,14 +1,36 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, request
 import os
-from pathlib import Path, PosixPath
+from pathlib import Path
 
 app = Flask(__name__)
 
+# Assume your sessions.txt and other paths are properly set up
+tmux_sessions = ["../" + session for session in open('sessions.txt', 'r').read().splitlines()]
+logs_path = "/scratch/project_462000088/members/degibert/data/logs/"
 
-tmux_sessions = ["../"+session for session in open('sessions.txt','r').read().splitlines()]
+def check_process_status(process_path):
+    if process_path.is_dir():
+        return "Directory", get_files_in_directory(process_path)
+    else:
+        try:
+            with open(process_path, "r") as file:
+                last_line = file.readlines()[-1]
+                if "error" in last_line.lower():
+                    return "Failed", last_line
+                else:
+                    return "Completed", None
+        except Exception as e:
+            return "Empty", str(e)
 
-steps = ["download", "data cleaning", "bicleaner", ""]
-
+def get_files_in_directory(directory_path):
+    files_status = []
+    for item in Path(directory_path).iterdir():
+        if item.is_dir():
+            # If it's a directory, you can decide how to handle this. Skipping for now.
+            continue
+        status, error = check_process_status(item)
+        files_status.append({"name": item.name, "status": status, "error": error, "path": str(item)})
+    return files_status
 
 def get_session_data():
     processes = []
@@ -23,23 +45,6 @@ def get_session_data():
                 processes.remove(process)
         sessions[tmux_session] = processes
     return sessions
-
-def check_process_status(process_path):
-    if os.path.isdir(process_path):
-        sub_files = sorted(Path(process_path).iterdir(), key=os.path.getmtime)
-        # remove gpu
-        sub_files = [file for file in sub_files if not file.name.endswith(".gpu")]
-        return "Directory", sub_files
-    else:
-        try:
-            with open(process_path, "r") as file:
-                last_line = file.readlines()[-1]
-                if "error" in last_line.lower():
-                    return "Failed", last_line
-                else:
-                    return "Completed", None
-        except Exception as e:
-            return "Empty", str(e)
 
 @app.route("/")
 def dashboard():
@@ -58,7 +63,6 @@ def dashboard():
 
 @app.route('/<path:filename>')
 def logs(filename):
-    logs_path = "/scratch/project_462000088/members/degibert/data/logs/"
     full_path = os.path.join(logs_path,filename)
 
     try:
