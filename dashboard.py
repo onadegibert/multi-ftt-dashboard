@@ -26,7 +26,6 @@ def get_files_in_directory(directory_path):
     files_status = []
     for item in Path(directory_path).iterdir():
         if item.is_dir():
-            # If it's a directory, you can decide how to handle this. Skipping for now.
             continue
         status, error = check_process_status(item)
         files_status.append({"name": item.name, "status": status, "error": error, "path": str(item)})
@@ -46,7 +45,17 @@ def get_session_data():
         sessions[tmux_session] = processes
     return sessions
 
-@app.route("/")
+@app.route("/training_curves")
+def training_curves():
+    # Placeholder for training curves section
+    return "To do"
+
+@app.route("/gpu_performance")
+def gpu_performance():
+    # Placeholder for GPU performance section
+    return "to do"
+
+@app.route("/dashboard")
 def dashboard():
     sessions = get_session_data()
     process_data = {}
