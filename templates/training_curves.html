@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Process Dashboard</title>
+    <title>Training Curves</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -135,72 +135,40 @@
         .open-btn:hover {
             background-color: #444;
         }
-    </style>    
+        .zoomed {
+            position: fixed;
+            max-width: 80%; /* Restrict maximum width */
+            max-height: 80%; /* Restrict maximum height */
+            top: 50%; /* Center vertically */
+            left: 50%; /* Center horizontally */
+            transform: translate(-50%, -50%); /* Center the image */
+            object-fit: contain;
+            z-index: 1000;
+            background-color: rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <h1>Dashboard for Multi-FTT experiments</h1>
+    <h1>Training Curves Dashboard</h1>
     <div id="mySidebar" class="sidebar">
         <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">×</a>
         <a href="{{ url_for('dashboard') }}">Logs</a>
         <a href="{{ url_for('training_curves') }}">Training Curves</a>
         <a href="{{ url_for('gpu_performance') }}">GPU Performance</a>
     </div>
-
     <button class="open-btn" onclick="openSidebar()">☰ Open Sidebar</button>
     <div class="scroll-container">
         <div class="flex-container">
-            {% for session, processes in process_data.items() %}
+            {% for session, image in session_images.items() %}
                 <div class="session-block">
                     <h2>{{ session }}</h2>
-                    <table>
-                        {% for process in processes %}
-                        <tr>
-                            <td>
-                                <a href="{{ url_for('logs', filename=process.path) }}" 
-                                target="_blank" 
-                                class="{{ 'completed' if process.status == 'Completed' else 'failed' if process.status == 'Failed' else 'empty' if process.status == 'Empty' else 'directory' }}">
-                                    {{ process.process }}
-                                </a>
-                                {% if process.status == 'Directory' %}
-                                    <ul>
-                                        {% for file in process.error %}
-                                            <li><a href="{{ url_for('logs', filename=file.path) }}"
-                                                target="_blank"
-                                                class="{{ 'completed' if file.status == 'Completed' else 'failed' if file.status == 'Failed' else 'empty' if file.status == 'Empty' else 'directory' }}">
-                                                {{ file.name }}</a></li>
-                                        {% endfor %}
-                                    </ul>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </table>
+                    <img src="{{ image }}" alt="Training Curve for {{ session }}" style="width:100%;height:auto;">
                 </div>
             {% endfor %}
         </div>
-        <div class="horizontal-scrollbar" aria-hidden="true"></div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var flexContainer = document.querySelector('.flex-container');
-            var scrollbar = document.querySelector('.horizontal-scrollbar');
-    
-            // Set the width of the scrollbar
-            scrollbar.style.width = flexContainer.scrollWidth + 'px';
-    
-            // Show the scrollbar
-            scrollbar.style.visibility = 'visible';
-    
-            // Sync the scroll position of flexContainer with the scrollbar
-            scrollbar.addEventListener('scroll', function() {
-                flexContainer.scrollLeft = scrollbar.scrollLeft;
-            });
-    
-            // Sync the scroll position of the scrollbar with flexContainer
-            flexContainer.addEventListener('scroll', function() {
-                scrollbar.scrollLeft = flexContainer.scrollLeft;
-            });
-        });
-    </script>    
+    </div>
+    </body>
     <script>
         function openSidebar() {
             document.getElementById("mySidebar").style.width = "250px";
@@ -209,6 +177,15 @@
         function closeSidebar() {
             document.getElementById("mySidebar").style.width = "0";
         }
+        function toggleZoom(event) {
+            var img = event.target; // Get the clicked image
+            img.classList.toggle('zoomed'); // Toggle the 'zoomed' class
+        }
+
+        // Add click event listener to all images inside session blocks
+        document.querySelectorAll('.session-block img').forEach(img => {
+            img.addEventListener('click', toggleZoom);
+        });
     </script>
-</body>
+    </body>
 </html>

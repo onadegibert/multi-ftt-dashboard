@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, url_for, send_file
 import os
 from pathlib import Path
+from werkzeug.utils import safe_join
 
 app = Flask(__name__)
 
@@ -45,10 +46,24 @@ def get_session_data():
         sessions[tmux_session] = processes
     return sessions
 
+@app.route('/image/<path:filename>')
+def custom_static(filename):
+    base_path = '/scratch/project_462000088/members/degibert/data/logs/images'
+    # Ensure the path is safe to prevent path traversal attacks
+    safe_path = safe_join(base_path, filename)
+    if not os.path.exists(safe_path):
+        abort(404)  # Not found if the path doesn't exist
+    return send_file(safe_path, mimetype='image/png')
+
 @app.route("/training_curves")
 def training_curves():
-    # Placeholder for training curves section
-    return "To do"
+    session_images = {}
+    for session in tmux_sessions:
+        session_name = session.replace("../dec23/","").replace("../dev23/","").replace("/","_")
+        image_name = f"{session_name}.png"
+        # Use the custom route to create a URL for the image
+        session_images[session_name] = url_for('custom_static', filename=image_name)
+    return render_template("training_curves.html", session_images=session_images)
 
 @app.route("/gpu_performance")
 def gpu_performance():
