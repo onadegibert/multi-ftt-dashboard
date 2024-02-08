@@ -79,10 +79,67 @@
         .gpu-stat-item span {
             margin-left: 5px;
         }
+        .slider {
+            width: 80%;
+            margin: 20px auto;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+
+        .sidebar .close-btn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .open-btn {
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #555;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            position: fixed; /* Add this line */
+            right: 0; /* Add this line */
+            top: 20px; /* Adjust as needed */
+        }
+        .open-btn:hover {
+            background-color: #444;
+        }
     </style>    
 </head>
 <body>
     <h1>GPU Performance Dashboard</h1>
+    <div id="mySidebar" class="sidebar">
+        <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">×</a>
+        <a href="{{ url_for('dashboard') }}">Logs</a>
+        <a href="{{ url_for('training_curves') }}">Training Curves</a>
+        <a href="{{ url_for('gpu_performance') }}">GPU Performance</a>
+    </div>
+    <button class="open-btn" onclick="openSidebar()">☰ Open Sidebar</button>
     <div class="scroll-container">
         <div class="flex-container">
             {% for session_name, gpu_stats_list in sessions_gpu_stats.items() %}
@@ -103,7 +160,22 @@
         <div class="horizontal-scrollbar" aria-hidden="true"></div>
     </div>
     <script>
-        // JavaScript for scrollbar functionality
+        function openSidebar() {
+            document.getElementById("mySidebar").style.width = "250px";
+        }
+
+        function closeSidebar() {
+            document.getElementById("mySidebar").style.width = "0";
+        }
+        function toggleZoom(event) {
+            var img = event.target; // Get the clicked image
+            img.classList.toggle('zoomed'); // Toggle the 'zoomed' class
+        }
+
+        // Add click event listener to all images inside session blocks
+        document.querySelectorAll('.session-block img').forEach(img => {
+            img.addEventListener('click', toggleZoom);
+        });
     </script>
 </body>
 </html>
