@@ -68,19 +68,26 @@ def training_curves():
     return render_template("training_curves.html", session_images=session_images)
 
 def analyze_gpu_log(log):
-
-    try:
+    if os.path.isfile(log):
+        print(log)
         # Convert the log data into a pandas DataFrame
         df = pd.read_csv(log) 
+        
+        multiple_jobs = df['device'].isin(["new job started"]).any()
+        if multiple_jobs:
+            # To remove "new job started" lines
+            #df = df_og[~df_og['device'].str.contains("new job started")]
+            # To keep only the last job
+            last_job = df[df['device'] == "new job started"].index[-1]
+            df.drop(df.index[:last_job+1], inplace=True)
         df['device'] = df['device'].str.split('\t', expand=True)[0]
         df['device'] = pd.to_datetime(df['device'], format='%Y-%m-%d_%H:%M:%S')
         
         # Calculate total run time
         run_time_seconds = (df['device'].iloc[-1] - df['device'].iloc[0]).total_seconds()
-        total_run_time = f"{run_time_seconds // 3600} hours, {(run_time_seconds % 3600) // 60} minutes"
 
         # Calculate average GPU use
-        avg_gpu_use = df['GPU use (%)'].mean().round(2)
+        avg_gpu_use = df['GPU use (%)'].mean()
 
         # Calculate total energy counter
         total_energy_counter = df['Energy counter'].sum()
@@ -88,9 +95,31 @@ def analyze_gpu_log(log):
         # Calculate total accumulated energy
         total_accumulated_energy = df['Accumulated Energy (uJ)'].sum()
 
-        return total_run_time, avg_gpu_use, total_energy_counter, total_accumulated_energy
-    except: # If the log file doesn't exist
+        return run_time_seconds, avg_gpu_use, total_energy_counter, total_accumulated_energy
+    else: # If the log file doesn't exist
+        print(log+" doesn't exist")
         return
+
+def add_gpu_stats(gpu_stats_list):
+    total_run_time_seconds = 0
+    avg_gpu_use = 0
+    total_energy_counter = 0
+    total_accumulated_energy = 0
+
+    for curr_gpu_stats in gpu_stats_list:
+        current_run_time, current_avg_gpu_use, current_energy_counter, current_accumulated_energy = curr_gpu_stats
+        
+        total_run_time_seconds += current_run_time
+        avg_gpu_use += current_avg_gpu_use
+        total_energy_counter += current_energy_counter
+        total_accumulated_energy += current_accumulated_energy
+    
+    # Convert total_run_time_seconds back to hours and minutes
+    total_run_time = f"{total_run_time_seconds // 3600} hours, {(total_run_time_seconds % 3600) // 60} minutes"
+    
+    # For avg_gpu_use, you might want to calculate the average over all entries, not just sum them
+    avg_gpu_use = round(avg_gpu_use / len(gpu_stats_list) if gpu_stats_list else 0, 2)
+    return total_run_time, avg_gpu_use, total_energy_counter, total_accumulated_energy
 
 @app.route("/gpu_performance")
 def gpu_performance():
@@ -100,27 +129,41 @@ def gpu_performance():
         session_gpu_stats = []  # List to hold GPU stats for each log file in the session
 
         # Process translate logs
+        translate_gpu_stats = []
         for log in glob.glob(session+"/translate_corpus/*/*gpu"):
             filename = log.replace(session,"").replace("/translate_corpus/","").replace("/","_")
             gpu_stats = analyze_gpu_log(log)
             if gpu_stats:  # Ensure gpu_stats is not None
-                session_gpu_stats.append((filename, "translate", gpu_stats))
+                translate_gpu_stats.append(gpu_stats)
+        total_translate = add_gpu_stats(translate_gpu_stats)
+        session_gpu_stats.append(("translate", total_translate))
 
+        # Process score logs
+        score_gpu_stats = []
         # Process .gpu logs
         for log in glob.glob(session+"/*.gpu"):
             filename = os.path.basename(log)
             gpu_stats = analyze_gpu_log(log)
             task = "score" if "score" in filename else "finetune" if "finetune" in filename else "train_opustrainer" if "opustrainer" in filename else "train_student"
             if gpu_stats:
-                session_gpu_stats.append((filename, task, gpu_stats))
+                if task == "score":
+                    score_gpu_stats.append(gpu_stats)
+                else:
+                    session_gpu_stats.append((task, add_gpu_stats([gpu_stats])))
+        total_score = add_gpu_stats(score_gpu_stats)
+        session_gpu_stats.append(("score", total_score))
 
         # Process eval logs
+        eval_gpu_stats = []
         for log in glob.glob(session+"/eval/*gpu"):
             filename = os.path.basename(log)
             gpu_stats = analyze_gpu_log(log)
             if gpu_stats:
-                session_gpu_stats.append((filename, "eval", gpu_stats))
+                eval_gpu_stats.append(gpu_stats)
 
+        total_eval = add_gpu_stats(eval_gpu_stats)
+        session_gpu_stats.append(("eval", total_eval))
+        
         if session_gpu_stats:
             sessions_gpu_stats[session_name] = session_gpu_stats
 
