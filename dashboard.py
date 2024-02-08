@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, url_for, send_file
-import os
+import os, glob
 from pathlib import Path
 from werkzeug.utils import safe_join
+import pandas as pd
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -65,10 +67,65 @@ def training_curves():
         session_images[session_name] = url_for('custom_static', filename=image_name)
     return render_template("training_curves.html", session_images=session_images)
 
+def analyze_gpu_log(log):
+
+    try:
+        # Convert the log data into a pandas DataFrame
+        df = pd.read_csv(log) 
+        df['device'] = df['device'].str.split('\t', expand=True)[0]
+        df['device'] = pd.to_datetime(df['device'], format='%Y-%m-%d_%H:%M:%S')
+        
+        # Calculate total run time
+        run_time_seconds = (df['device'].iloc[-1] - df['device'].iloc[0]).total_seconds()
+        total_run_time = f"{run_time_seconds // 3600} hours, {(run_time_seconds % 3600) // 60} minutes"
+
+        # Calculate average GPU use
+        avg_gpu_use = df['GPU use (%)'].mean().round(2)
+
+        # Calculate total energy counter
+        total_energy_counter = df['Energy counter'].sum()
+
+        # Calculate total accumulated energy
+        total_accumulated_energy = df['Accumulated Energy (uJ)'].sum()
+
+        return total_run_time, avg_gpu_use, total_energy_counter, total_accumulated_energy
+    except: # If the log file doesn't exist
+        return
+
 @app.route("/gpu_performance")
 def gpu_performance():
-    # Placeholder for GPU performance section
-    return "to do"
+    sessions_gpu_stats = {}  # Dictionary to hold GPU stats for each session
+    for session in tmux_sessions:
+        session_name = session.replace("../dec23/","").replace("../dev23/","").replace("/","_")
+        session_gpu_stats = []  # List to hold GPU stats for each log file in the session
+
+        # Process translate logs
+        for log in glob.glob(session+"/translate_corpus/*/*gpu"):
+            filename = log.replace(session,"").replace("/translate_corpus/","").replace("/","_")
+            gpu_stats = analyze_gpu_log(log)
+            if gpu_stats:  # Ensure gpu_stats is not None
+                session_gpu_stats.append((filename, "translate", gpu_stats))
+
+        # Process .gpu logs
+        for log in glob.glob(session+"/*.gpu"):
+            filename = os.path.basename(log)
+            gpu_stats = analyze_gpu_log(log)
+            task = "score" if "score" in filename else "finetune" if "finetune" in filename else "train_opustrainer" if "opustrainer" in filename else "train_student"
+            if gpu_stats:
+                session_gpu_stats.append((filename, task, gpu_stats))
+
+        # Process eval logs
+        for log in glob.glob(session+"/eval/*gpu"):
+            filename = os.path.basename(log)
+            gpu_stats = analyze_gpu_log(log)
+            if gpu_stats:
+                session_gpu_stats.append((filename, "eval", gpu_stats))
+
+        if session_gpu_stats:
+            sessions_gpu_stats[session_name] = session_gpu_stats
+
+    # Pass the GPU stats data to the HTML template
+    return render_template('gpu_performance.html', sessions_gpu_stats=sessions_gpu_stats)
 
 @app.route("/dashboard")
 def dashboard():

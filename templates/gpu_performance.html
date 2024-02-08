@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPU Performance Dashboard</title>
+    <style>
+        /* Add your CSS styles here */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .scroll-container {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        .flex-container {
+            display: flex;
+            white-space: nowrap;
+            padding: 20px;
+            width: max-content;
+        }
+        .horizontal-scrollbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            overflow-x: scroll;
+            overflow-y: hidden;
+            visibility: hidden;
+        }
+        .session-block {
+            background-color: #fff;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+        .session-block h2 {
+            color: #555;
+            padding: 10px 15px;
+            margin: 0;
+            background-color: #eaeaea;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        /* Additional styles */
+        .gpu-stats {
+            padding: 10px 15px;
+        }
+        .gpu-stat-item {
+            margin-bottom: 10px;
+        }
+        .gpu-stat-item label {
+            font-weight: bold;
+        }
+        .gpu-stat-item span {
+            margin-left: 5px;
+        }
+    </style>    
+</head>
+<body>
+    <h1>GPU Performance Dashboard</h1>
+    <div class="scroll-container">
+        <div class="flex-container">
+            {% for session_name, gpu_stats_list in sessions_gpu_stats.items() %}
+                <div class="session-block">
+                    <h2>{{ session_name }}</h2>
+                    {% for filename, category, gpu_stats in gpu_stats_list %}
+                        <div>
+                            <strong>{{ filename }}</strong> {% if category %} ({{ category }}) {% endif %}
+                            <div>Total Run Time: {{ gpu_stats[0] }}</div>
+                            <div>Average GPU Use: {{ gpu_stats[1] }}%</div>
+                            <div>Total Energy Counter: {{ gpu_stats[2] }}</div>
+                            <div>Total Accumulated Energy: {{ gpu_stats[3] }} uJ</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+        <div class="horizontal-scrollbar" aria-hidden="true"></div>
+    </div>
+    <script>
+        // JavaScript for scrollbar functionality
+    </script>
+</body>
+</html>
